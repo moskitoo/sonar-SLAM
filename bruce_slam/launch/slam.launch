@@ -3,6 +3,9 @@
     <arg name="enable_slam" default="true"/>
     <arg name="kalman_dead_reckoning" default="false"/>
 
+    <arg name="launch_sonar" default="false"/>
+    <arg name="launch_slam" default="false"/>
+
     <!-- offline mode -->
     <arg name="file" default=""/>
     <arg name="start" default="0.0"/>
@@ -36,6 +39,7 @@
             <!-- start the dead reckoning node if we are not using the kalman filter -->
             <node if="$(eval kalman_dead_reckoning == false)"  pkg="bruce_slam" name="dead_reckoning" type="dead_reckoning_node.py" output="screen">
                 <rosparam command="load" file="$(find bruce_slam)/config/dead_reckoning.yaml"/>
+                <!-- <remap from="/vn100/imu/raw" to="/bluerov2/mavros/imu/data"/> -->
             </node>
 
             <!-- start the kalman filter if we have requested it above -->
@@ -44,12 +48,12 @@
             </node>
             
             <!-- start the feature extraction node -->
-            <node pkg="bruce_slam" name="feature_extraction" type="feature_extraction_node.py" output="screen">
+            <node if="$(eval launch_sonar == true)" pkg="bruce_slam" name="feature_extraction" type="feature_extraction_node.py" output="screen">
                 <rosparam command="load" file="$(find bruce_slam)/config/feature.yaml" subst_value="true"/>
             </node>
 
             <!-- start the SLAM node -->
-            <node pkg="bruce_slam" name="slam" type="slam_node.py" output="screen">
+            <node if="$(eval launch_slam == true)" pkg="bruce_slam" name="slam" type="slam_node.py" output="screen">
                 <rosparam command="load" file="$(find bruce_slam)/config/slam.yaml" subst_value="true"/>
                 <param name="enable_slam" value="$(arg enable_slam)"/>
                 <param name="save_fig" value="false"/>

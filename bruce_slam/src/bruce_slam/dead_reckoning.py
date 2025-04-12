@@ -8,6 +8,7 @@ import numpy as np
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import PointCloud2, Imu
 from message_filters import ApproximateTimeSynchronizer, Cache, Subscriber
+from std_msgs.msg import Float64
 
 # import custom messages
 from kvh_gyro.msg import gyro as GyroMsg
@@ -70,7 +71,8 @@ class DeadReckoningNode(object):
 		# Subscribers and caches
 		self.dvl_sub = Subscriber(DVL_TOPIC, DVL)
 		self.gyro_sub = Subscriber(GYRO_INTEGRATION_TOPIC, Odometry)
-		self.depth_sub = Subscriber(DEPTH_TOPIC, Depth)
+		# self.depth_sub = Subscriber(DEPTH_TOPIC, Depth)
+		self.depth_sub = Subscriber(DEPTH_TOPIC, Float64)
 		self.depth_cache = Cache(self.depth_sub, 1)
 
 		if rospy.get_param(ns + "imu_version") == 1:
@@ -138,7 +140,8 @@ class DeadReckoningNode(object):
 		vel = np.array([dvl_msg.velocity.x, dvl_msg.velocity.y, dvl_msg.velocity.z])
 
 		# package the odom message and publish it
-		self.send_odometry(vel,rot,dvl_msg.header.stamp,depth_msg.depth)
+		# self.send_odometry(vel,rot,dvl_msg.header.stamp,depth_msg.depth)
+		self.send_odometry(vel,rot,dvl_msg.header.stamp,depth_msg.data)
 
 
 	def callback_with_gyro(self, imu_msg:Imu, dvl_msg:DVL, gyro_msg:GyroMsg)->None:
@@ -251,6 +254,8 @@ class DeadReckoningNode(object):
 				self.pose.x(), self.pose.y(), self.pose.rotation().yaw()
 			)
 			point = pose2.transformFrom(local_point)
+
+			print(f"depth: {depth}")
 
 			self.pose = gtsam.Pose3(
 				rot, gtsam.Point3(point[0], point[1], depth)
