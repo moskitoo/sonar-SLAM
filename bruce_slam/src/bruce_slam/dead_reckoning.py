@@ -217,13 +217,25 @@ class DeadReckoningNode(object):
 			# figure out how far we moved in the body frame using the DVL message
 			dt = (dvl_time - self.prev_time).to_sec()
 			# Calculate velocity from acceleration (assuming we have previous velocity)
-			if not hasattr(self, 'prev_vel'):
-				self.prev_vel = np.zeros(3)
-			vel = self.prev_vel + acc * dt
+			# if not hasattr(self, 'prev_vel'):
+			# 	self.prev_vel = np.zeros(3)
+			# vel = self.prev_vel + acc * dt
+			# # Calculate displacement using average velocity
+			# trans = (self.prev_vel + vel) * 0.5 * dt
+			# # Store current velocity for next iteration
+			# self.prev_vel = vel.copy()
+
+			scaler = 5.0
+
+			if not hasattr(self, 'prev_acc'):
+				self.prev_acc = np.zeros(3)
+			acc = (self.prev_acc + acc) / 2
 			# Calculate displacement using average velocity
-			trans = (self.prev_vel + vel) * 0.5 * dt
+			trans = (self.prev_acc + acc) * (dt ** 2) * 0.5 * scaler
 			# Store current velocity for next iteration
-			self.prev_vel = vel.copy()
+			self.prev_vel = acc.copy()
+
+			
 
 			# get a rotation matrix with only roll and pitch
 			rotation_flat = gtsam.Rot3.Ypr(0, rot.pitch(), rot.roll())
