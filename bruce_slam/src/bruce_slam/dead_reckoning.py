@@ -73,10 +73,12 @@ class DeadReckoningNode(object):
 		self.gyro_sub = Subscriber(GYRO_INTEGRATION_TOPIC, Odometry)
 		# self.depth_sub = Subscriber(DEPTH_TOPIC, Depth)
 		self.depth_sub = Subscriber(DEPTH_TOPIC, Float64)
-		self.depth_cache = Cache(self.depth_sub, 1)
+		self.depth_cache = Cache(self.depth_sub, 1, allow_headerless=True)
 
 		if rospy.get_param(ns + "imu_version") == 1:
-			self.imu_sub = Subscriber(IMU_TOPIC, Imu)
+			# self.imu_sub = Subscriber(IMU_TOPIC, Imu)
+			self.imu_sub = rospy.Subscriber(
+				IMU_TOPIC, Imu, self.callback, queue_size=10)
 		elif rospy.get_param(ns + "imu_version") == 2:
 			self.imu_sub = Subscriber(IMU_TOPIC_MK_II, Imu)
 
@@ -90,20 +92,22 @@ class DeadReckoningNode(object):
 		# are we using the FOG gyroscope?
 		self.use_gyro = rospy.get_param(ns + "use_gyro")
 
-		# define the callback, are we using the gyro or the VN100?
-		if self.use_gyro:
-			self.ts = ApproximateTimeSynchronizer([self.imu_sub, self.dvl_sub, self.gyro_sub], 300, .1)
-			self.ts.registerCallback(self.callback_with_gyro)
-		else:
-			self.ts = ApproximateTimeSynchronizer([self.imu_sub, self.dvl_sub], 200, .1)
-			self.ts.registerCallback(self.callback)
+		# # define the callback, are we using the gyro or the VN100?
+		# if self.use_gyro:
+		# 	self.ts = ApproximateTimeSynchronizer([self.imu_sub, self.dvl_sub, self.gyro_sub], 300, .1)
+		# 	self.ts.registerCallback(self.callback_with_gyro)
+		# else:
+		# 	# self.ts = ApproximateTimeSynchronizer([self.imu_sub, self.dvl_sub], 200, .1)
+		# 	self.ts = ApproximateTimeSynchronizer([self.imu_sub], 200, .1)
+		# 	self.ts.registerCallback(self.callback)
 
 		self.tf = tf.TransformBroadcaster()
 
 		loginfo("Localization node is initialized")
 
 
-	def callback(self, imu_msg:Imu, dvl_msg:DVL)->None:
+	# def callback(self, imu_msg:Imu, dvl_msg:DVL)->None:
+	def callback(self, imu_msg:Imu)->None:
 		"""Handle the dead reckoning using the VN100 and DVL only. Fuse and publish an odometry message.
 
 		Args:
@@ -117,10 +121,10 @@ class DeadReckoningNode(object):
 			return
 
 		#check the delay between the depth message and the DVL
-		dd_delay = (depth_msg.header.stamp - dvl_msg.header.stamp).to_sec()
-		#print(dd_delay)
-		if abs(dd_delay) > 1.0:
-			logdebug("Missing depth message for {}".format(dd_delay))
+		# dd_delay = (depth_msg.header.stamp - imu_msg.header.stamp).to_sec()
+		# #print(dd_delay)
+		# if abs(dd_delay) > 1.0:
+		# 	logdebug("Missing depth message for {}".format(dd_delay))
 
 		#convert the imu message from msg to gtsam rotation object
 		rot = r2g(imu_msg.orientation)
@@ -137,11 +141,15 @@ class DeadReckoningNode(object):
 		# rot = gtsam.Rot3.Ypr(rot.yaw()-self.imu_yaw0, rot.pitch(), np.radians(90)+rot.roll())
 
 		# parse the DVL message into an array of velocites
-		vel = np.array([dvl_msg.velocity.x, dvl_msg.velocity.y, dvl_msg.velocity.z])
+		# vel = np.array([dvl_msg.velocity.x, dvl_msg.velocity.y, dvl_msg.velocity.z])
+
+		# acc = np.array(imu_msg.linear_acceleration)
+		acc = np.array([imu_msg.linear_acceleration.x, imu_msg.linear_acceleration.y, imu_msg.linear_acceleration.z])
+
+		print(f"acc: {acc}")
 
 		# package the odom message and publish it
-		# self.send_odometry(vel,rot,dvl_msg.header.stamp,depth_msg.depth)
-		self.send_odometry(vel,rot,dvl_msg.header.stamp,depth_msg.data)
+		self.send_odometry(acc,rot,imu_msg.header.stamp,depth_msg.data)
 
 
 	def callback_with_gyro(self, imu_msg:Imu, dvl_msg:DVL, gyro_msg:GyroMsg)->None:
@@ -196,25 +204,25 @@ class DeadReckoningNode(object):
 		"""
 
 		#if the DVL message has any velocity above the max threhold do some error handling
-		if np.any(np.abs(acc) > self.dvl_max_velocity):
-			if self.pose:
+		# if np.any(np.abs(acc) > self.dvl_max_velocity):
+		# 	if self.pose:
 
-				self.dvl_error_timer += (dvl_time - self.prev_time).to_sec()
-				if self.dvl_error_timer > 5.0:
-					logwarn(
-						"DVL velocity ({:.1f}, {:.1f}, {:.1f}) exceeds max velocity {:.1f} for {:.1f} secs.".format(
-							acc[0],
-							acc[1],
-							acc[2],
-							self.dvl_max_velocity,
-							self.dvl_error_timer,
-						)
-					)
-				acc = self.prev_acc
-			else:
-				return
-		else:
-			self.dvl_error_timer = 0.0
+		# 		self.dvl_error_timer += (dvl_time - self.prev_time).to_sec()
+		# 		if self.dvl_error_timer > 5.0:
+		# 			logwarn(
+		# 				"DVL velocity ({:.1f}, {:.1f}, {:.1f}) exceeds max velocity {:.1f} for {:.1f} secs.".format(
+		# 					acc[0],
+		# 					acc[1],
+		# 					acc[2],
+		# 					self.dvl_max_velocity,
+		# 					self.dvl_error_timer,
+		# 				)
+		# 			)
+		# 		acc = self.prev_acc
+		# 	else:
+		# 		return
+		# else:
+		# 	self.dvl_error_timer = 0.0
 
 		if self.pose:
 			# figure out how far we moved in the body frame using the DVL message
@@ -232,9 +240,16 @@ class DeadReckoningNode(object):
 
 			if not hasattr(self, 'prev_acc'):
 				self.prev_acc = np.zeros(3)
+
+			print(type(self.prev_acc))
+			print(type(acc))
+			print(self.prev_acc.shape)
+			print(acc.shape)
+
 			acc = (self.prev_acc + acc) / 2
 			# Calculate displacement using average velocity
-			trans = (self.prev_acc + acc) * (dt ** 2) * 0.5 * scaler
+			# trans = (self.prev_acc + acc) * (dt ** 2) * 0.5 * scaler
+			trans = acc * (dt ** 2) * 0.5 * scaler
 			# Store current velocity for next iteration
 			self.prev_vel = acc.copy()
 
