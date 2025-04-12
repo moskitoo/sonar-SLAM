@@ -30,7 +30,7 @@ class DeadReckoningNode(object):
 	def __init__(self):
 		self.pose = None #vehicle pose
 		self.prev_time = None #previous reading time
-		self.prev_vel = None #previous reading velocity
+		self.prev_acc = None #previous reading velocity
 		self.keyframes = [] #keyframe list
 
 		# Force yaw at origin to be aligned with x axis
@@ -175,13 +175,14 @@ class DeadReckoningNode(object):
 		rot = gtsam.Rot3.Ypr(gyro_yaw, rot.pitch(), rot.roll())
 
 		#parse the DVL message into an array of velocites
-		vel = np.array([dvl_msg.velocity.x, dvl_msg.velocity.y, dvl_msg.velocity.z])
+		# vel = np.array([dvl_msg.velocity.x, dvl_msg.velocity.y, dvl_msg.velocity.z])
+		acc = np.array(imu_msg.linear_accleration)
 
 		# package the odom message and publish it
-		self.send_odometry(vel,rot,dvl_msg.header.stamp,depth_msg.depth)
+		self.send_odometry(acc,rot,dvl_msg.header.stamp,depth_msg.depth)
 
 
-	def send_odometry(self,vel:np.array,rot:gtsam.Rot3,dvl_time:rospy.Time,depth:float)->None:
+	def send_odometry(self,acc:np.array,rot:gtsam.Rot3,dvl_time:rospy.Time,depth:float)->None:
 		"""Package the odometry given all the DVL, rotation matrix, and depth
 
 		Args:
@@ -192,21 +193,21 @@ class DeadReckoningNode(object):
 		"""
 
 		#if the DVL message has any velocity above the max threhold do some error handling
-		if np.any(np.abs(vel) > self.dvl_max_velocity):
+		if np.any(np.abs(acc) > self.dvl_max_velocity):
 			if self.pose:
 
 				self.dvl_error_timer += (dvl_time - self.prev_time).to_sec()
 				if self.dvl_error_timer > 5.0:
 					logwarn(
 						"DVL velocity ({:.1f}, {:.1f}, {:.1f}) exceeds max velocity {:.1f} for {:.1f} secs.".format(
-							vel[0],
-							vel[1],
-							vel[2],
+							acc[0],
+							acc[1],
+							acc[2],
 							self.dvl_max_velocity,
 							self.dvl_error_timer,
 						)
 					)
-				vel = self.prev_vel
+				acc = self.prev_acc
 			else:
 				return
 		else:
@@ -215,8 +216,14 @@ class DeadReckoningNode(object):
 		if self.pose:
 			# figure out how far we moved in the body frame using the DVL message
 			dt = (dvl_time - self.prev_time).to_sec()
-			dv = (vel + self.prev_vel) * 0.5
-			trans = dv * dt
+			# Calculate velocity from acceleration (assuming we have previous velocity)
+			if not hasattr(self, 'prev_vel'):
+				self.prev_vel = np.zeros(3)
+			vel = self.prev_vel + acc * dt
+			# Calculate displacement using average velocity
+			trans = (self.prev_vel + vel) * 0.5 * dt
+			# Store current velocity for next iteration
+			self.prev_vel = vel.copy()
 
 			# get a rotation matrix with only roll and pitch
 			rotation_flat = gtsam.Rot3.Ypr(0, rot.pitch(), rot.roll())
@@ -243,7 +250,7 @@ class DeadReckoningNode(object):
 
 		# log the this timesteps messages for next time
 		self.prev_time = dvl_time
-		self.prev_vel = vel
+		self.prev_acc = acc
 
 		new_keyframe = False
 		if not self.keyframes:
