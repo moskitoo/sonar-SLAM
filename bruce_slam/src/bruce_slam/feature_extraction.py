@@ -118,8 +118,10 @@ class FeatureExtraction(object):
             self.sonar_sub = rospy.Subscriber(
                 SONAR_TOPIC, OculusPing, self.callback, queue_size=10)
         else:
+            # self.sonar_sub = rospy.Subscriber(
+            #     SONAR_TOPIC_UNCOMPRESSED, OculusPingUncompressed, self.callback, queue_size=10)
             self.sonar_sub = rospy.Subscriber(
-                SONAR_TOPIC_UNCOMPRESSED, OculusPingUncompressed, self.callback, queue_size=10)
+                SONAR_TOPIC_UNCOMPRESSED, Image, self.callback, queue_size=10)
 
         #feature publish topic
         self.feature_pub = rospy.Publisher(
@@ -193,18 +195,18 @@ class FeatureExtraction(object):
         self.feature_pub.publish(feature_msg)
 
     #@add_lock
-    def callback(self, sonar_msg):
+    def callback(self, sonar_msg: Image):
         '''Feature extraction callback
         sonar_msg: an OculusPing messsage, in polar coordinates
         '''
 
-        if sonar_msg.ping_id % self.skip != 0:
-            self.feature_img = None
-            # Don't extract features in every frame.
-            # But we still need empty point cloud for synchronization in SLAM node.
-            nan = np.array([[np.nan, np.nan]])
-            self.publish_features(sonar_msg, nan)
-            return
+        # if sonar_msg.ping_id % self.skip != 0:
+        #     self.feature_img = None
+        #     # Don't extract features in every frame.
+        #     # But we still need empty point cloud for synchronization in SLAM node.
+        #     nan = np.array([[np.nan, np.nan]])
+        #     self.publish_features(sonar_msg, nan)
+        #     return
 
         #decode the compressed image
         if self.compressed_images == True:
@@ -214,22 +216,26 @@ class FeatureExtraction(object):
             
         #the image is not compressed, just use the ros numpy package
         else:
-            img = ros_numpy.image.image_to_numpy(sonar_msg.ping)
+            # img = ros_numpy.image.image_to_numpy(sonar_msg.ping)
+            img = ros_numpy.image.image_to_numpy(sonar_msg)
 
         #generate a mesh grid mapping from polar to cartisian
-        self.generate_map_xy(sonar_msg)
+        # self.generate_map_xy(sonar_msg)
 
         # Detect targets and check against threshold using CFAR (in polar coordinates)
         peaks = self.detector.detect(img, self.alg)
         peaks &= img > self.threshold
 
-        vis_img = cv2.remap(img, self.map_x, self.map_y, cv2.INTER_LINEAR)
-        vis_img = cv2.applyColorMap(vis_img, 2)
-        self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(vis_img, "bgr8"))
-
+        # vis_img = cv2.remap(img, self.map_x, self.map_y, cv2.INTER_LINEAR)
+        # vis_img = cv2.applyColorMap(vis_img, 2)
+        # self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(vis_img, "bgr8"))
+        self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(img, "bgr8"))
         #convert to cartisian
-        peaks = cv2.remap(peaks, self.map_x, self.map_y, cv2.INTER_LINEAR)        
+        # peaks = cv2.remap(peaks, self.map_x, self.map_y, cv2.INTER_LINEAR)
+
         locs = np.c_[np.nonzero(peaks)]
+
+        print(f"locs: {locs.shape}")
 
         #convert from image coords to meters
         x = locs[:,1] - self.cols / 2.

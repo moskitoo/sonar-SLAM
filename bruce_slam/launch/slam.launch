@@ -3,8 +3,10 @@
     <arg name="enable_slam" default="true"/>
     <arg name="kalman_dead_reckoning" default="false"/>
 
-    <arg name="launch_sonar" default="false"/>
+    <arg name="launch_sonar" default="true"/>
     <arg name="launch_slam" default="false"/>
+
+    <arg name="sonar_proc" default="true"/>
 
     <!-- offline mode -->
     <arg name="file" default=""/>
@@ -30,6 +32,10 @@
     <!-- online mode -->
     <group ns="bruce" if="$(eval arg('file') == '')">
         <group ns="slam">
+
+
+            <!-- Launch sonar post-processing -->
+            <!-- <include if="$(arg sonar_proc)" file="$(find sonar_image_proc)/launch/sonar_postproc.launch" /> -->
 
             <!-- start the gyro intergration node if we are not using the kalman filer -->
             <node if="$(eval kalman_dead_reckoning == false)"  pkg="bruce_slam" name="gyro_fusion" type="gyro_node.py" output="screen">
