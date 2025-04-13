@@ -243,19 +243,25 @@ class FeatureExtraction(object):
         vis_img = cv2.applyColorMap(img, 2)
         self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(vis_img, "bgr8"))
         # self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(img, "bgr8"))
-        self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(img, "mono8"))
+        # self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(img, "mono8"))
+        # self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(peaks, "mono8"))
         #convert to cartisian
         # peaks = cv2.remap(peaks, self.map_x, self.map_y, cv2.INTER_LINEAR)
 
         locs = np.c_[np.nonzero(peaks)]
 
+        print(f"peaks: {peaks.shape}")
         print(f"locs: {locs.shape}")
 
         #convert from image coords to meters
         x = locs[:,1] - self.cols / 2.
         x = (-1 * ((x / float(self.cols / 2.)) * (self.width / 2.))) #+ self.width
         y = (-1*(locs[:,0] / float(self.rows)) * self.height) + self.height
+        # x = locs[:,1]
+        # y = locs[:,0]
         points = np.column_stack((y,x))
+
+        # print(f"points: {points}")
 
         #filter the cloud using PCL
         if len(points) and self.resolution > 0:
