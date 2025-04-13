@@ -210,6 +210,7 @@ class FeatureExtraction(object):
 
         #decode the compressed image
         if self.compressed_images == True:
+            # img = np.frombuffer(sonar_msg.ping.data,np.uint8)
             img = np.frombuffer(sonar_msg.ping.data,np.uint8)
             img = np.array(cv2.imdecode(img,cv2.IMREAD_COLOR)).astype(np.uint8)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -218,18 +219,25 @@ class FeatureExtraction(object):
         else:
             # img = ros_numpy.image.image_to_numpy(sonar_msg.ping)
             img = ros_numpy.image.image_to_numpy(sonar_msg)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         #generate a mesh grid mapping from polar to cartisian
         # self.generate_map_xy(sonar_msg)
 
+        print(f"img shape: {img.shape}")
+        print(f"img type: {type(img)}")
+
         # Detect targets and check against threshold using CFAR (in polar coordinates)
         peaks = self.detector.detect(img, self.alg)
         peaks &= img > self.threshold
+        # peaks = None
 
         # vis_img = cv2.remap(img, self.map_x, self.map_y, cv2.INTER_LINEAR)
         # vis_img = cv2.applyColorMap(vis_img, 2)
-        # self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(vis_img, "bgr8"))
-        self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(img, "bgr8"))
+        vis_img = cv2.applyColorMap(img, 2)
+        self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(vis_img, "bgr8"))
+        # self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(img, "bgr8"))
+        self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(img, "mono8"))
         #convert to cartisian
         # peaks = cv2.remap(peaks, self.map_x, self.map_y, cv2.INTER_LINEAR)
 
