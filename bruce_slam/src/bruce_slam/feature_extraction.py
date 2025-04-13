@@ -109,6 +109,12 @@ class FeatureExtraction(object):
             ns + "visualization/coordinates", "cartesian"
         )
 
+        self.res = 0.06454201611952226
+        self.height = 29.94749547945833
+        self.rows = 464
+        self.width = 54.28329671055591
+        self.cols = 842
+
         #vis parameters
         self.radius = rospy.get_param(ns + "visualization/radius")
         self.color = rospy.get_param(ns + "visualization/color")
