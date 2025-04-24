@@ -1,0 +1,30 @@
+<launch>
+
+    <arg name="three_dimension" default="false"/>
+    
+    <!-- <group if="$(arg fiducial_correction)">
+        <include file="$(find ts6_bluerov2_perception)/launch/aruco_detect.launch"/>
+        <include file="$(find ts6_bluerov2_perception)/launch/fiducial_slam.launch"/>
+        
+        <node pkg="robot_localization" type="ekf_localization_node" name="ekf_state_estimator" clear_params="true">
+            <rosparam command="load" file="$(find ts6_bluerov2_perception)/config/ekf_params_with_fiducial_3d.yaml" if="$(arg three_dimension)"/>
+            <rosparam command="load" file="$(find ts6_bluerov2_perception)/config/ekf_params_with_fiducial.yaml" unless="$(arg three_dimension)"/>
+        </node>
+    </group> -->
+
+    <!-- <group unless="$(arg fiducial_correction)">
+        <node pkg="robot_localization" type="ekf_localization_node" name="ekf_state_estimator" clear_params="true">
+            <rosparam command="load" file="$(find ts6_bluerov2_perception)/config/ekf_params_imu_only_3d.yaml" if="$(arg three_dimension)"/>
+            <rosparam command="load" file="$(find ts6_bluerov2_perception)/config/ekf_params_imu_only.yaml" unless="$(arg three_dimension)"/>
+        </node>
+    </group> -->
+
+    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_state_estimator" clear_params="true">
+        <rosparam command="load" file="$(find bruce_slam)/config/ekf_config/ekf_params_imu_only_3d.yaml" if="$(arg three_dimension)"/>
+        <rosparam command="load" file="$(find bruce_slam)/config/ekf_config/ekf_params_imu_only.yaml" unless="$(arg three_dimension)"/>
+    </node>
+      
+    <!-- Start RViz  -->
+    <!-- <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find ts6_bluerov2_perception)/rviz/bluerov2_perception.rviz"/> -->
+    
+</launch>
