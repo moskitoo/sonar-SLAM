@@ -39,3 +39,7 @@ pybind11_add_module(cfar src/${PROJECT_NAME}/cpp/cfar.cpp)
 set_target_properties(cfar PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_PACKAGE_PYTHON_DESTINATION}
 )
+
+catkin_install_python(PROGRAMS src/${PROJECT_NAME}/ground_truth_node.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
