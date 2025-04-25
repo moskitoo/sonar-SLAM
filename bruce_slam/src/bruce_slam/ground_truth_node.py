@@ -18,6 +18,8 @@ class GroundTruthNode:
         self.origin_lat = None
         self.origin_lon = None
         self.origin_alt = 0.0
+
+        self.last_transform_time = rospy.Time(0)
         
         # Latest data
         self.current_depth = 0.0
@@ -80,9 +82,9 @@ class GroundTruthNode:
         if self.current_orientation is not None:
             # Convert GPS to ENU coordinates
             e, n, u = pm.geodetic2enu(msg.latitude, msg.longitude, msg.altitude, 
-                                      self.origin_lat, self.origin_lon, self.origin_alt)
+                                    self.origin_lat, self.origin_lon, self.origin_alt)
             
-            # Create odometry message
+            # Create odometry message - use the message's timestamp if available
             current_time = rospy.Time.now()
             odom = Odometry()
             odom.header.stamp = current_time
@@ -96,13 +98,29 @@ class GroundTruthNode:
             # Publish the message
             self.odom_pub.publish(odom)
             
-            # Also publish the transform for visualization
-            self.broadcast_transform(odom)
+            # Get a guaranteed unique transform timestamp
+            transform_time = self.get_unique_timestamp(current_time)
+            self.broadcast_transform(odom, transform_time)
 
-    def broadcast_transform(self, odom_msg):
-        """Broadcast a transform from the odometry message"""
+    def get_unique_timestamp(self, base_time):
+        """Generate a unique timestamp that's guaranteed to be after the last one used"""
+        # If the provided timestamp is already newer than our last used timestamp, use it
+        if base_time > self.last_transform_time:
+            unique_time = base_time
+        else:
+            # Otherwise, use the last timestamp + a small increment
+            unique_time = self.last_transform_time + rospy.Duration.from_sec(0.001)
+        
+        # Update our record of the last timestamp we used
+        self.last_transform_time = unique_time
+        return unique_time
+
+    def broadcast_transform(self, odom_msg, timestamp=None):
+        """Broadcast a transform from the odometry message with optional custom timestamp"""
         transform = TransformStamped()
         transform.header = odom_msg.header
+        if timestamp is not None:
+            transform.header.stamp = timestamp  # Use provided timestamp instead
         transform.child_frame_id = odom_msg.child_frame_id
         transform.transform.translation.x = odom_msg.pose.pose.position.x
         transform.transform.translation.y = odom_msg.pose.pose.position.y
