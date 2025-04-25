@@ -1,7 +1,11 @@
 <launch>
     <arg name="rviz" default="true"/>
     <arg name="three_dimension" default="false"/>
-    
+
+
+    <node pkg="diagnostic_aggregator" type="aggregator_node" name="diagnostic_aggregator" >
+        <rosparam command="load" file="$(find bruce_slam)/config/diagnostic_aggregator.yaml" />
+    </node>
     <!-- <group if="$(arg fiducial_correction)">
         <include file="$(find ts6_bluerov2_perception)/launch/aruco_detect.launch"/>
         <include file="$(find ts6_bluerov2_perception)/launch/fiducial_slam.launch"/>
@@ -19,11 +23,11 @@
         </node>
     </group> -->
 
-    <node pkg="bruce_slam" type="ground_truth_node.py" name="ground_truth_node" clear_params="true"/>
+    <node pkg="bruce_slam" type="ground_truth_node.py" name="ground_truth_node" clear_params="true" output="log"/>
 
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_state_estimator" clear_params="true">
         <rosparam command="load" file="$(find bruce_slam)/config/ekf_config/ekf_params_imu_only_3d.yaml" if="$(arg three_dimension)"/>
-        <!-- <rosparam command="load" file="$(find bruce_slam)/config/ekf_config/ekf_params_imu_only.yaml" unless="$(arg three_dimension)"/> -->
+        <rosparam command="load" file="$(find bruce_slam)/config/ekf_config/ekf_params_imu_only.yaml" unless="$(arg three_dimension)"/>
         <rosparam command="load" file="/home/ubuntu/34763-autonomous-marine-robotics/Training_Sessions/TS6_Perception/ts6_ws/src/sonar-SLAM/bruce_slam/config/ekf_config/ekf_params_imu_only.yaml" unless="$(arg three_dimension)"/>
     </node>
       
