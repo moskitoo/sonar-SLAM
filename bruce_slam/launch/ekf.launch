@@ -1,5 +1,5 @@
 <launch>
-
+    <arg name="rviz" default="true"/>
     <arg name="three_dimension" default="false"/>
     
     <!-- <group if="$(arg fiducial_correction)">
@@ -19,12 +19,15 @@
         </node>
     </group> -->
 
+    <node pkg="bruce_slam" type="ground_truth_node.py" name="ground_truth_node" clear_params="true"/>
+
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_state_estimator" clear_params="true">
         <rosparam command="load" file="$(find bruce_slam)/config/ekf_config/ekf_params_imu_only_3d.yaml" if="$(arg three_dimension)"/>
-        <rosparam command="load" file="$(find bruce_slam)/config/ekf_config/ekf_params_imu_only.yaml" unless="$(arg three_dimension)"/>
+        <!-- <rosparam command="load" file="$(find bruce_slam)/config/ekf_config/ekf_params_imu_only.yaml" unless="$(arg three_dimension)"/> -->
+        <rosparam command="load" file="/home/ubuntu/34763-autonomous-marine-robotics/Training_Sessions/TS6_Perception/ts6_ws/src/sonar-SLAM/bruce_slam/config/ekf_config/ekf_params_imu_only.yaml" unless="$(arg three_dimension)"/>
     </node>
       
     <!-- Start RViz  -->
-    <!-- <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find ts6_bluerov2_perception)/rviz/bluerov2_perception.rviz"/> -->
+    <node if="$(arg rviz)" type="rviz" name="rviz" pkg="rviz" args="-d $(find bruce_slam)/rviz/test.rviz" />
     
 </launch>
