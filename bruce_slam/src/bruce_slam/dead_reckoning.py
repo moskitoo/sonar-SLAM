@@ -272,6 +272,10 @@ class DeadReckoningNode(object):
 
 			print(f"depth: {depth}")
 
+			depth = -depth
+
+			print(f"depth: {depth}")
+
 			self.pose = gtsam.Pose3(
 				rot, gtsam.Point3(point[0], point[1], depth)
 			)
