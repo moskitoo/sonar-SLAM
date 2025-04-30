@@ -4,7 +4,8 @@
     <arg name="kalman_dead_reckoning" default="false"/>
 
     <arg name="launch_sonar" default="true"/>
-    <arg name="launch_slam" default="false"/>
+    <arg name="launch_slam" default="true"/>
+    <arg name="launch_ground_truth" default="true"/>
 
     <arg name="sonar_proc" default="true"/>
 
@@ -13,6 +14,11 @@
     <arg name="start" default="0.0"/>
     <arg name="duration" default="-1"/>
     <arg name="kill" default="false"/>
+
+    <node if="$(eval launch_ground_truth == true)"  pkg="bruce_slam" name="ground_truth_node" type="ground_truth_node.py" output="screen" />
+
+    <!-- Launch sonar post-processing -->
+    <include if="$(arg sonar_proc)" file="$(find sonar_image_proc)/launch/sonar_postproc.launch" />
 
     <!-- offline mode -->
     <group ns="bruce" unless="$(eval arg('file') == '')">
@@ -32,10 +38,7 @@
     <!-- online mode -->
     <group ns="bruce" if="$(eval arg('file') == '')">
         <group ns="slam">
-
-
-            <!-- Launch sonar post-processing -->
-            <!-- <include if="$(arg sonar_proc)" file="$(find sonar_image_proc)/launch/sonar_postproc.launch" /> -->
+            
 
             <!-- start the gyro intergration node if we are not using the kalman filer -->
             <node if="$(eval kalman_dead_reckoning == false)"  pkg="bruce_slam" name="gyro_fusion" type="gyro_node.py" output="screen">
@@ -67,8 +70,10 @@
 
         </group>
         <node pkg="tf" name="map_to_world_tf_publisher" type="static_transform_publisher" args="0 0 0 0 0 3.14159 world map 100"/>
+        <!-- <node pkg="tf" name="bluerov2_map_to_map_tf_publisher" type="static_transform_publisher" args="0 0 0 0 0 3.14159 map bluerov2/map 100"/> -->
+        
     </group>
 
-    <node if="$(arg rviz)" type="rviz" name="rviz" pkg="rviz" args="-d $(find bruce_slam)/rviz/video.rviz" />
+    <node if="$(arg rviz)" type="rviz" name="rviz" pkg="rviz" args="-d $(find bruce_slam)/rviz/visualization.rviz" />
 
 </launch>

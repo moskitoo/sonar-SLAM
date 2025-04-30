@@ -136,6 +136,9 @@ class FeatureExtraction(object):
         #vis publish topic
         self.feature_img_pub = rospy.Publisher(
             SONAR_FEATURE_IMG_TOPIC, Image, queue_size=10)
+        
+        self.feature_img_thresh_pub = rospy.Publisher(
+            SONAR_FEATURE_THRESH_IMG_TOPIC, Image, queue_size=10)
 
         self.configure()
 
@@ -237,6 +240,7 @@ class FeatureExtraction(object):
         peaks = self.detector.detect(img, self.alg)
         peaks &= img > self.threshold
         # peaks = None
+        peaks_vis = peaks.copy() * 255
 
         # vis_img = cv2.remap(img, self.map_x, self.map_y, cv2.INTER_LINEAR)
         # vis_img = cv2.applyColorMap(vis_img, 2)
@@ -244,7 +248,7 @@ class FeatureExtraction(object):
         self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(vis_img, "bgr8"))
         # self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(img, "bgr8"))
         # self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(img, "mono8"))
-        # self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(peaks, "mono8"))
+        self.feature_img_thresh_pub.publish(ros_numpy.image.numpy_to_image(peaks_vis, "mono8"))
         #convert to cartisian
         # peaks = cv2.remap(peaks, self.map_x, self.map_y, cv2.INTER_LINEAR)
 

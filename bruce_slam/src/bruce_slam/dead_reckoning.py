@@ -236,7 +236,8 @@ class DeadReckoningNode(object):
 			# # Store current velocity for next iteration
 			# self.prev_vel = vel.copy()
 
-			scaler = 5.0
+			# scaler = 5.0
+			scaler = 30.0
 
 			if not hasattr(self, 'prev_acc'):
 				self.prev_acc = np.zeros(3)
@@ -245,6 +246,8 @@ class DeadReckoningNode(object):
 			print(type(acc))
 			print(self.prev_acc.shape)
 			print(acc.shape)
+
+			acc[0], acc[1] = acc[1], -acc[0]
 
 			acc = (self.prev_acc + acc) / 2
 			# Calculate displacement using average velocity
@@ -272,7 +275,7 @@ class DeadReckoningNode(object):
 
 			print(f"depth: {depth}")
 
-			depth = -depth
+			# depth = -depth
 
 			print(f"depth: {depth}")
 
