@@ -1,4 +1,7 @@
 <launch>
+
+    <param name="use_sim_time" value="true" />
+
     <arg name="rviz" default="true"/>
     <arg name="enable_slam" default="true"/>
     <arg name="kalman_dead_reckoning" default="false"/>
@@ -21,6 +24,10 @@
             <param name="use_heading" value="$(arg use_heading)"/>
         </node>
     </group>
+
+    <node pkg="bruce_slam" name="mavros_republisher" type="bluerov_republisher.py" output="screen">
+        <param name="apply_drift" value="false"/>
+    </node>
 
 
     <!-- Launch sonar post-processing -->
@@ -47,15 +54,14 @@
             
 
             <!-- start the gyro intergration node if we are not using the kalman filer -->
-            <node if="$(eval kalman_dead_reckoning == false)"  pkg="bruce_slam" name="gyro_fusion" type="gyro_node.py" output="screen">
+            <!-- <node if="$(eval kalman_dead_reckoning == false)"  pkg="bruce_slam" name="gyro_fusion" type="gyro_node.py" output="screen">
                 <rosparam command="load" file="$(find bruce_slam)/config/gyro.yaml"/>
-            </node>
+            </node> -->
 
             <!-- start the dead reckoning node if we are not using the kalman filter -->
-            <node if="$(eval kalman_dead_reckoning == false)"  pkg="bruce_slam" name="dead_reckoning" type="dead_reckoning_node.py" output="screen">
+            <!-- <node if="$(eval kalman_dead_reckoning == false)"  pkg="bruce_slam" name="dead_reckoning" type="dead_reckoning_node.py" output="screen">
                 <rosparam command="load" file="$(find bruce_slam)/config/dead_reckoning.yaml"/>
-                <!-- <remap from="/vn100/imu/raw" to="/bluerov2/mavros/imu/data"/> -->
-            </node>
+            </node> -->
 
             <!-- start the kalman filter if we have requested it above -->
             <node if="$(eval kalman_dead_reckoning == true)"  pkg="bruce_slam" name="kalman" type="kalman_node.py" output="screen">
@@ -78,7 +84,11 @@
         <node pkg="tf" name="map_to_world_tf_publisher" type="static_transform_publisher" args="0 0 0 0 0 3.14159 world map 100"/>
         <!-- <node pkg="tf" name="bluerov2_map_to_map_tf_publisher" type="static_transform_publisher" args="0 0 0 0 0 3.14159 map bluerov2/map 100"/> -->
         <!-- <node pkg="tf" name="bluerov2_map_to_map_tf_publisher" type="static_transform_publisher" args="-1.3999 29.3821 0 0 0 0 map bluerov2/map 100"/> -->
-        <node pkg="tf" name="bluerov2_map_to_map_tf_publisher" type="static_transform_publisher" args="-2.5 25.3821 0 0 0 0 map bluerov2/map 100"/>
+
+        <!-- <node pkg="tf" name="bluerov2_map_to_map_tf_publisher" type="static_transform_publisher" args="-2.5 25.3821 0 0 0 0 map bluerov2/map 100"/>
+
+        <node pkg="tf" name="base_link_tf_publisher" type="static_transform_publisher" args="0 0 0 0 0 0 bluerov2/base_link base_link 100"/>
+        <node pkg="tf" name="bluerov_map_odom_tf_publisher" type="static_transform_publisher" args="0 0 0 0 0 0 odom bluerov2/map 100"/> -->
         
     </group>
 
