@@ -2,6 +2,7 @@
     <arg name="rviz" default="true"/>
     <arg name="enable_slam" default="true"/>
     <arg name="kalman_dead_reckoning" default="false"/>
+    <arg name="use_heading" default="false"/>
 
     <arg name="launch_sonar" default="true"/>
     <arg name="launch_slam" default="true"/>
@@ -15,7 +16,12 @@
     <arg name="duration" default="-1"/>
     <arg name="kill" default="false"/>
 
-    <node if="$(eval launch_ground_truth == true)"  pkg="bruce_slam" name="ground_truth_node" type="ground_truth_node.py" output="screen" />
+    <group if="$(eval launch_ground_truth == true)">
+        <node pkg="bruce_slam" type="ground_truth_node.py" name="ground_truth_node" output="screen" launch-prefix="python3">
+            <param name="use_heading" value="$(arg use_heading)"/>
+        </node>
+    </group>
+
 
     <!-- Launch sonar post-processing -->
     <include if="$(arg sonar_proc)" file="$(find sonar_image_proc)/launch/sonar_postproc.launch" />
@@ -71,6 +77,8 @@
         </group>
         <node pkg="tf" name="map_to_world_tf_publisher" type="static_transform_publisher" args="0 0 0 0 0 3.14159 world map 100"/>
         <!-- <node pkg="tf" name="bluerov2_map_to_map_tf_publisher" type="static_transform_publisher" args="0 0 0 0 0 3.14159 map bluerov2/map 100"/> -->
+        <!-- <node pkg="tf" name="bluerov2_map_to_map_tf_publisher" type="static_transform_publisher" args="-1.3999 29.3821 0 0 0 0 map bluerov2/map 100"/> -->
+        <node pkg="tf" name="bluerov2_map_to_map_tf_publisher" type="static_transform_publisher" args="-2.5 25.3821 0 0 0 0 map bluerov2/map 100"/>
         
     </group>
 

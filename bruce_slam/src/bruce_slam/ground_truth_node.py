@@ -18,10 +18,18 @@ class GroundTruthNode:
         self.origin_lat = None
         self.origin_lon = None
         self.origin_alt = 0.0
+
+        self.drift_vector = np.array([0.01, 0.01, 0.0])
+        self.drift_increment = 0.01
+
+        
         
         # Latest data
         self.current_depth = 0.0
+        self.current_heading = None
         self.current_orientation = None
+
+        self.use_heading = rospy.get_param("~use_heading")
         
         # TF broadcaster for transforms
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
@@ -33,6 +41,7 @@ class GroundTruthNode:
         # Subscribers
         rospy.Subscriber('/bluerov2/mavros/global_position/global', NavSatFix, self.gps_callback)
         rospy.Subscriber('/bluerov2/mavros/global_position/rel_alt', Float64, self.depth_callback)
+        rospy.Subscriber('/bluerov2/mavros/global_position/compass_hdg', Float64, self.compass_callback)
         rospy.Subscriber('/bluerov2/mavros/imu/data', Imu, self.imu_callback)
         
         # Also subscribe to the odometry topic you want to compare with
@@ -77,7 +86,60 @@ class GroundTruthNode:
         if msg.latitude == 0 and msg.longitude == 0:
             return
         
-        if self.current_orientation is not None:
+        if self.current_orientation is not None and self.use_heading is False:
+            # Convert GPS to ENU coordinates
+            e, n, u = pm.geodetic2enu(msg.latitude, msg.longitude, msg.altitude, 
+                                      self.origin_lat, self.origin_lon, self.origin_alt)
+            
+            # Create odometry message
+            current_time = rospy.Time.now()
+            odom = Odometry()
+            odom.header.stamp = current_time
+            odom.header.frame_id = "map"
+            odom.child_frame_id = "gt_base_link"  # Changed to distinguish from odometry base_link
+
+            # Apply drift vector
+            e += self.drift_vector[0]
+            n += self.drift_vector[1]
+
+            self.drift_vector[0] += self.drift_increment
+            self.drift_vector[1] += self.drift_increment
+            
+            # Set the position
+            odom.pose.pose.position = Point(e, n, self.current_depth)
+            # Set the orientation with drift
+            # Start with the current orientation
+            q_orig = [
+                self.current_orientation.x,
+                self.current_orientation.y,
+                self.current_orientation.z,
+                self.current_orientation.w
+            ]
+            
+            # Convert quaternion to euler angles
+            euler = tf.transformations.euler_from_quaternion(q_orig)
+            
+            # Add drift to yaw (rotation around z-axis)
+            drift_angle = 1 * np.sin(rospy.Time.now().to_sec() / 10.0)  # Small oscillating drift
+            euler = (euler[0], euler[1], euler[2] + drift_angle)
+            
+            # Convert back to quaternion
+            q_with_drift = tf.transformations.quaternion_from_euler(euler[0], euler[1], euler[2])
+            
+            # Set the orientation with drift
+            odom.pose.pose.orientation.x = q_with_drift[0]
+            odom.pose.pose.orientation.y = q_with_drift[1]
+            odom.pose.pose.orientation.z = q_with_drift[2]
+            odom.pose.pose.orientation.w = q_with_drift[3]
+            
+            # Publish the message
+            self.odom_pub.publish(odom)
+            
+            # Also publish the transform for visualization
+            self.broadcast_transform(odom)
+
+        if self.current_heading is not None and self.use_heading is True:
+            print("Using heading")
             # Convert GPS to ENU coordinates
             e, n, u = pm.geodetic2enu(msg.latitude, msg.longitude, msg.altitude, 
                                       self.origin_lat, self.origin_lon, self.origin_alt)
@@ -91,7 +153,14 @@ class GroundTruthNode:
             
             # Set the position
             odom.pose.pose.position = Point(e, n, self.current_depth)
-            odom.pose.pose.orientation = self.current_orientation
+            # odom.pose.pose.orientation = self.current_orientation
+            quaternion = tf.transformations.quaternion_from_euler(0, 0, self.current_heading)
+
+            # Assign quaternion to odom_msg
+            odom.pose.pose.orientation.x = quaternion[0]
+            odom.pose.pose.orientation.y = quaternion[1]
+            odom.pose.pose.orientation.z = quaternion[2]
+            odom.pose.pose.orientation.w = quaternion[3]
             
             # Publish the message
             self.odom_pub.publish(odom)
@@ -123,6 +192,9 @@ class GroundTruthNode:
 
     def depth_callback(self, msg):
         self.current_depth = msg.data
+
+    def compass_callback(self, msg):
+        self.current_heading = msg.data
 
     def imu_callback(self, msg):
         self.current_orientation = msg.orientation
