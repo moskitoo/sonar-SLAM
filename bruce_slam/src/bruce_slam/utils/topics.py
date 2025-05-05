@@ -17,6 +17,8 @@ SONAR_TOPIC = "/sonar_oculus_node/M750d/ping"
 # SONAR_TOPIC_UNCOMPRESSED = "/sonar_oculus_node/ping"
 SONAR_TOPIC_UNCOMPRESSED = "/postprocess/drawn_sonar"
 
+SONAR_TOPIC_METADATA = "/oculus/oculus_simple_ping_result"
+
 SONAR_VERTICAL_TOPIC = "/sonar_oculus_node/M1200d/ping"
 GYRO_TOPIC = "/gyro"
 

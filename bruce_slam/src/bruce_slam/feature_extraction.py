@@ -108,11 +108,11 @@ class FeatureExtraction(object):
 
         # Subscribe to the preprocessed sonar image
         self.sonar_sub = rospy.Subscriber(
-            "/oculus/sonar_image", Image, self.callback, queue_size=10)
+            SONAR_TOPIC_UNCOMPRESSED, Image, self.callback, queue_size=10)
             
         # Subscribe to metadata to get sonar parameters
         self.metadata_sub = rospy.Subscriber(
-            "/oculus/oculus_simple_ping_result", OculusPingUncompressed, self.metadata_callback, queue_size=10)
+            SONAR_TOPIC_METADATA, OculusPingUncompressed, self.metadata_callback, queue_size=10)
 
         #feature publish topic
         self.feature_pub = rospy.Publisher(
