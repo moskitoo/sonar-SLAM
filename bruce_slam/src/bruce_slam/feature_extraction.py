@@ -10,7 +10,6 @@ from bruce_slam.utils.io import *
 from bruce_slam.utils.topics import *
 from bruce_slam.utils.conversions import *
 from bruce_slam.utils.visualization import apply_custom_colormap
-#from bruce_slam.feature import FeatureExtraction
 from bruce_slam import pcl
 import matplotlib.pyplot as plt
 from sonar_oculus.msg import OculusPing, OculusPingUncompressed
@@ -20,8 +19,6 @@ from .utils import *
 from .sonar import *
 
 from bruce_slam.CFAR import CFAR
-
-#from bruce_slam.bruce_slam import sonar
 
 class FeatureExtraction(object):
     '''Class to handle extracting features from Sonar images using CFAR
@@ -56,21 +53,16 @@ class FeatureExtraction(object):
         # for offline visualization
         self.feature_img = None
 
-        #for remapping from polar to cartisian
-        self.res = None
-        self.height = None
-        self.rows = None
-        self.width = None
-        self.cols = None
-        self.map_x = None
-        self.map_y = None
-        self.f_bearings = None
-        self.to_rad = lambda bearing: bearing * np.pi / 18000
-        self.REVERSE_Z = 1
-        self.maxRange = None
+        # Parameters for Cartesian image dimensions
+        self.range_max = None  # Maximum range in meters
+        self.range_resolution = None  # Meters per pixel
+        self.n_ranges = None  # Number of range bins
+        self.n_beams = None  # Number of beams
+        self.image_width = None  # Width of the image in pixels
+        self.image_height = None  # Height of the image in pixels
 
         #which vehicle is being used
-        self.compressed_images = True
+        self.compressed_images = False  # Set to False for preprocessed images
 
         # place holder for the multi-robot system
         self.rov_id = ""
@@ -100,7 +92,7 @@ class FeatureExtraction(object):
         self.skip = rospy.get_param(ns + "filter/skip")
 
         #are the incoming images compressed?
-        self.compressed_images = rospy.get_param(ns + "compressed_images")
+        self.compressed_images = False  # Always use preprocessed images
 
         #cv bridge
         self.BridgeInstance = cv_bridge.CvBridge()
@@ -114,13 +106,13 @@ class FeatureExtraction(object):
         self.radius = rospy.get_param(ns + "visualization/radius")
         self.color = rospy.get_param(ns + "visualization/color")
 
-        #sonar subsciber
-        if self.compressed_images:
-            self.sonar_sub = rospy.Subscriber(
-                SONAR_TOPIC, OculusPing, self.callback, queue_size=10)
-        else:
-            self.sonar_sub = rospy.Subscriber(
-                SONAR_TOPIC_UNCOMPRESSED, OculusPingUncompressed, self.callback, queue_size=10)
+        # Subscribe to the preprocessed sonar image
+        self.sonar_sub = rospy.Subscriber(
+            "/oculus/sonar_image", Image, self.callback, queue_size=10)
+            
+        # Subscribe to metadata to get sonar parameters
+        self.metadata_sub = rospy.Subscriber(
+            "/oculus/oculus_simple_ping_result", OculusPingUncompressed, self.metadata_callback, queue_size=10)
 
         #feature publish topic
         self.feature_pub = rospy.Publisher(
@@ -131,117 +123,82 @@ class FeatureExtraction(object):
             SONAR_FEATURE_IMG_TOPIC, Image, queue_size=10)
 
         self.configure()
-
-    def generate_map_xy(self, ping):
-        '''Generate a mesh grid map for the sonar image, this enables converison to cartisian from the 
-        source polar images
-
-        ping: OculusPing message
-        '''
-
-        # INFO FROM THE TOPIC
-        # range_resolution: 0.019006249667463917
-        # n_ranges: 526
-        # n_beams: 512
-        # image_offset: 2048
-        # image_size: 271416
-        # message_size: 273464
-
-
-        # INFO FROM DEVELOPMENT
-        # self.res = 0.06454201611952226
-        # self.height = 29.94749547945833
-        # self.rows = 464
-        # self.width = 54.28329671055591
-        # self.cols = 842
         
+    def metadata_callback(self, metadata_msg):
+        """Callback to get sonar metadata parameters needed for coordinate conversion"""
+        self.range_max = metadata_msg.range
+        self.range_resolution = metadata_msg.range_resolution
+        self.n_ranges = metadata_msg.n_ranges
+        self.n_beams = metadata_msg.n_beams
+        
+        # Update image dimensions based on metadata
+        self.image_width = self.n_beams
+        self.image_height = self.n_ranges
 
-        # uint32     ping_id
-        # uint16     part_number
-        # uint32     start_time
-
-        # int16[]    bearings         # bearings of beams (bearing * PI / 18000)
-        # float64    range_resolution # length of a single range bin
-        # uint32     num_ranges       # number of range lines in the image
-        # uint32     num_beams        # number of bearings in the image     
-
-        # sensor_msgs/CompressedImage ping
-
-        # ==== Resulting Dimensions ====
-        # Height (m): 29.95
-        # Width (m): 54.28
-        # Rows: 464
-        # Cols: 842
-        # ==== Calculation Parameters ====
-        # Input range_resolution: 0.06454201611952226
-        # Input num_ranges (rows): 464
-        # Input bearings: -6500° to 6500°
-
-
-        print(type(ping))
-
-
-        #get the parameters from the ping message
-        _res = ping.range_resolution
-        _height = ping.num_ranges * _res
-        _rows = ping.num_ranges
-        _width = np.sin(
-            self.to_rad(ping.bearings[-1] - ping.bearings[0]) / 2) * _height * 2
-        _cols = int(np.ceil(_width / _res))
-
-        #check if the parameters have changed
-        if self.res == _res and self.height == _height and self.rows == _rows and self.width == _width and self.cols == _cols:
-            return
-
-        #if they have changed do some work    
-        self.res, self.height, self.rows, self.width, self.cols = _res, _height, _rows, _width, _cols
-
-        #generate the mapping
-        bearings = self.to_rad(np.asarray(ping.bearings, dtype=np.float32))
-        f_bearings = interp1d(
-            bearings,
-            range(len(bearings)),
-            kind='linear',
-            bounds_error=False,
-            fill_value=-1,
-            assume_sorted=True)
-
-        #build the meshgrid
-        XX, YY = np.meshgrid(range(self.cols), range(self.rows))
-        x = self.res * (self.rows - YY)
-        y = self.res * (-self.cols / 2.0 + XX + 0.5)
-        b = np.arctan2(y, x) * self.REVERSE_Z
-        r = np.sqrt(np.square(x) + np.square(y))
-        self.map_y = np.asarray(r / self.res, dtype=np.float32)
-        self.map_x = np.asarray(f_bearings(b), dtype=np.float32)
-
-    def publish_features(self, ping, points):
-        '''Publish the feature message using the provided parameters in an OculusPing message
-        ping: OculusPing message
+    def publish_features(self, msg, points):
+        '''Publish the feature message using the provided parameters
+        msg: Message with header information
         points: points to be converted to a ros point cloud, in cartisian meters
         '''
 
         #shift the axis
-        points = np.c_[points[:,0],np.zeros(len(points)),  points[:,1]]
+        points = np.c_[points[:,0], np.zeros(len(points)), points[:,1]]
 
         #convert to a pointcloud
         feature_msg = n2r(points, "PointCloudXYZ")
 
         #give the feature message the same time stamp as the source sonar image
         #this is CRITICAL to good time sync downstream
-        feature_msg.header.stamp = ping.header.stamp
+        feature_msg.header.stamp = msg.header.stamp
         feature_msg.header.frame_id = "base_link"
 
         #publish the point cloud, to be used by SLAM
         self.feature_pub.publish(feature_msg)
 
-    #@add_lock
+    def cartesian_to_meters(self, locs):
+        """Convert image coordinates to meters
+        
+        locs: Nx2 array of [row, col] coordinates in the image
+        
+        Returns Nx2 array of [x, y] coordinates in meters
+        """
+        if self.range_max is None or self.range_resolution is None:
+            rospy.logwarn("Sonar metadata not received yet. Using default values.")
+            self.range_max = 40.0
+            self.range_resolution = 0.076
+            self.image_width = 512
+            self.image_height = 526
+        
+        # Calculate physical dimensions of the image in meters
+        width_meters = self.range_max * 2  # Full width of the image in meters
+        height_meters = self.range_max     # Height of the image in meters
+        
+        # Center of the image is typically at the bottom-center
+        # Convert from image coordinates to meters
+        # Assuming image origin (0,0) is at top-left
+        
+        # X coordinates (left-right)
+        # Map columns from [0, image_width] to [-width_meters/2, width_meters/2]
+        x = ((locs[:, 1] / float(self.image_width)) * width_meters) - (width_meters / 2)
+        
+        # Y coordinates (up-down)
+        # Map rows from [0, image_height] to [0, height_meters]
+        # Flip Y because image coordinates start from top-left, but sonar starts from bottom
+        y = (1.0 - (locs[:, 0] / float(self.image_height))) * height_meters
+        
+        return np.column_stack((x, y))
+
     def callback(self, sonar_msg):
         '''Feature extraction callback
-        sonar_msg: an OculusPing messsage, in polar coordinates
+        sonar_msg: an Image message containing the preprocessed sonar image
         '''
-
-        if sonar_msg.ping_id % self.skip != 0:
+        if not hasattr(sonar_msg, 'ping_id'):
+            # Use header seq as ping_id for preprocessed images
+            ping_id = sonar_msg.header.seq
+        else:
+            ping_id = sonar_msg.ping_id
+            
+        if ping_id % self.skip != 0:
             self.feature_img = None
             # Don't extract features in every frame.
             # But we still need empty point cloud for synchronization in SLAM node.
@@ -249,47 +206,37 @@ class FeatureExtraction(object):
             self.publish_features(sonar_msg, nan)
             return
 
-        #decode the compressed image
-        if self.compressed_images == True:
-            img = np.frombuffer(sonar_msg.ping.data,np.uint8)
-            img = np.array(cv2.imdecode(img,cv2.IMREAD_COLOR)).astype(np.uint8)
+        # Convert image message to numpy array
+        img = ros_numpy.image.image_to_numpy(sonar_msg)
+        if len(img.shape) == 3:
             img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            
-        #the image is not compressed, just use the ros numpy package
-        else:
-            img = ros_numpy.image.image_to_numpy(sonar_msg.ping)
 
-        #generate a mesh grid mapping from polar to cartisian
-        self.generate_map_xy(sonar_msg)
-
-        # Detect targets and check against threshold using CFAR (in polar coordinates)
+        # Detect targets and check against threshold using CFAR
         peaks = self.detector.detect(img, self.alg)
         peaks &= img > self.threshold
 
-        vis_img = cv2.remap(img, self.map_x, self.map_y, cv2.INTER_LINEAR)
-        vis_img = cv2.applyColorMap(vis_img, 2)
+        # Visualization
+        vis_img = cv2.applyColorMap(img, 2)
         self.feature_img_pub.publish(ros_numpy.image.numpy_to_image(vis_img, "bgr8"))
 
-        #convert to cartisian
-        peaks = cv2.remap(peaks, self.map_x, self.map_y, cv2.INTER_LINEAR)        
+        # Get feature locations
         locs = np.c_[np.nonzero(peaks)]
+        
+        if len(locs) > 0:
+            # Convert from image coordinates to meters
+            points = self.cartesian_to_meters(locs)
+            
+            # Filter the cloud using PCL
+            if len(points) and self.resolution > 0:
+                points = pcl.downsample(points, self.resolution)
 
-        #convert from image coords to meters
-        x = locs[:,1] - self.cols / 2.
-        x = (-1 * ((x / float(self.cols / 2.)) * (self.width / 2.))) #+ self.width
-        y = (-1*(locs[:,0] / float(self.rows)) * self.height) + self.height
-        points = np.column_stack((y,x))
+            # Remove some outliers
+            if self.outlier_filter_min_points > 1 and len(points) > 0:
+                points = pcl.remove_outlier(
+                    points, self.outlier_filter_radius, self.outlier_filter_min_points
+                )
+        else:
+            points = np.zeros((0, 2))
 
-        #filter the cloud using PCL
-        if len(points) and self.resolution > 0:
-            points = pcl.downsample(points, self.resolution)
-
-        #remove some outliars
-        if self.outlier_filter_min_points > 1 and len(points) > 0:
-            # points = pcl.density_filter(points, 5, self.min_density, 1000)
-            points = pcl.remove_outlier(
-                points, self.outlier_filter_radius, self.outlier_filter_min_points
-            )
-
-        #publish the feature message
+        # Publish the feature message
         self.publish_features(sonar_msg, points)
