@@ -234,6 +234,22 @@ class FeatureExtraction(object):
         if len(locs) > 0:
             # Convert from image coordinates to meters
             points = self.cartesian_to_meters(locs)
+
+
+
+            # self.res = 0.06454201611952226
+            # self.height = 29.94749547945833
+            # self.rows = 464
+            # self.width = 54.28329671055591
+            # self.cols = 842
+
+            # #convert from image coords to meters
+            # x = locs[:,1] - self.cols / 2.
+            # x = (-1 * ((x / float(self.cols / 2.)) * (self.width / 2.))) #+ self.width
+            # y = (-1*(locs[:,0] / float(self.rows)) * self.height) + self.height
+            # # x = locs[:,1]
+            # # y = locs[:,0]
+            # points = np.column_stack((y,x))
             
             # Filter the cloud using PCL
             if len(points) and self.resolution > 0:
