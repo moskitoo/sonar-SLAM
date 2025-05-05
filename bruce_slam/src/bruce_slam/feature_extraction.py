@@ -143,6 +143,7 @@ class FeatureExtraction(object):
 
         #shift the axis
         points = np.c_[points[:,0], np.zeros(len(points)), points[:,1]]
+        # points = np.c_[points[:,0], -points[:,1], np.zeros(len(points))]
 
         #convert to a pointcloud
         feature_msg = n2r(points, "PointCloudXYZ")
