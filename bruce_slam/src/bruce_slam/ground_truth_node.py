@@ -22,7 +22,8 @@ class GroundTruthNode:
         self.drift_vector = np.array([0.01, 0.01, 0.0])
         self.drift_increment = 0.01
 
-        
+
+        self.initial_drift_vector = np.array([2.5, -25.3821, 0.0])
         
         # Latest data
         self.current_depth = 0.0
@@ -51,7 +52,7 @@ class GroundTruthNode:
         self.rate = rospy.Rate(10)  # 10 Hz
         
         # Publish a static transform between map and odom
-        self.publish_static_transform()
+        # self.publish_static_transform()
         
         rospy.loginfo("Ground Truth Node initialized")
 
@@ -86,17 +87,24 @@ class GroundTruthNode:
         if msg.latitude == 0 and msg.longitude == 0:
             return
         
+        # Convert GPS to ENU coordinates
+        e, n, u = pm.geodetic2enu(msg.latitude, msg.longitude, msg.altitude, 
+                                    self.origin_lat, self.origin_lon, self.origin_alt)
+        
+        # Create odometry message
+        current_time = rospy.Time.now()
+        odom = Odometry()
+        odom.header.stamp = current_time
+        # odom.header.frame_id = "map"
+        odom.header.frame_id = "bluerov2/map"
+        odom.child_frame_id = "gt_base_link"  # Changed to distinguish from odometry base_link
+
+
+        e += self.initial_drift_vector[0]
+        n += self.initial_drift_vector[1]
+
+        
         if self.current_orientation is not None and self.use_heading is False:
-            # Convert GPS to ENU coordinates
-            e, n, u = pm.geodetic2enu(msg.latitude, msg.longitude, msg.altitude, 
-                                      self.origin_lat, self.origin_lon, self.origin_alt)
-            
-            # Create odometry message
-            current_time = rospy.Time.now()
-            odom = Odometry()
-            odom.header.stamp = current_time
-            odom.header.frame_id = "map"
-            odom.child_frame_id = "gt_base_link"  # Changed to distinguish from odometry base_link
 
             # Apply drift vector
             e += self.drift_vector[0]
@@ -120,7 +128,7 @@ class GroundTruthNode:
             euler = tf.transformations.euler_from_quaternion(q_orig)
             
             # Add drift to yaw (rotation around z-axis)
-            drift_angle = 1 * np.sin(rospy.Time.now().to_sec() / 10.0)  # Small oscillating drift
+            drift_angle = 2 * np.sin(rospy.Time.now().to_sec() / 10.0)  # Small oscillating drift
             euler = (euler[0], euler[1], euler[2] + drift_angle)
             
             # Convert back to quaternion
@@ -140,16 +148,6 @@ class GroundTruthNode:
 
         if self.current_heading is not None and self.use_heading is True:
             print("Using heading")
-            # Convert GPS to ENU coordinates
-            e, n, u = pm.geodetic2enu(msg.latitude, msg.longitude, msg.altitude, 
-                                      self.origin_lat, self.origin_lon, self.origin_alt)
-            
-            # Create odometry message
-            current_time = rospy.Time.now()
-            odom = Odometry()
-            odom.header.stamp = current_time
-            odom.header.frame_id = "map"
-            odom.child_frame_id = "gt_base_link"  # Changed to distinguish from odometry base_link
             
             # Set the position
             odom.pose.pose.position = Point(e, n, self.current_depth)

@@ -1,0 +1,15 @@
+<launch>
+    <arg name="rviz" default="false"/>
+    <arg name="use_heading" default="false"/>
+
+
+    <node pkg="bruce_slam" type="ground_truth_node.py" name="ground_truth_node" output="screen" launch-prefix="python3">
+        <param name="use_heading" value="$(arg use_heading)"/>
+    </node>
+
+    <node pkg="tf" name="bluerov2_map_to_map_tf_publisher" type="static_transform_publisher" args="-2.5 25.3821 0 0 0 0 map bluerov2/map 100"/>
+
+
+    <node if="$(arg rviz)" type="rviz" name="rviz" pkg="rviz" args="-d $(find bruce_slam)/rviz/visualization.rviz" />
+
+</launch>
