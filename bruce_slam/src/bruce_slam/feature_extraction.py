@@ -170,13 +170,6 @@ class FeatureExtraction(object):
             self.range_resolution = 0.076
             self.image_width = 512
             self.image_height = 526
-
-
-        # self.res = 0.06454201611952226
-        # self.height = 29.94749547945833
-        # self.rows = 464
-        # self.width = 54.28329671055591
-        # self.cols = 842
         
         # Calculate physical dimensions of the image in meters
         width_meters = self.range_max * 2  # Full width of the image in meters
@@ -194,6 +187,19 @@ class FeatureExtraction(object):
         # Map rows from [0, image_height] to [0, height_meters]
         # Flip Y because image coordinates start from top-left, but sonar starts from bottom
         y = (1.0 - (locs[:, 0] / float(self.image_height))) * height_meters
+
+
+        #OLS SOLUTION
+
+        # self.res = 0.06454201611952226
+        # self.height = 29.94749547945833
+        # self.rows = 464
+        # self.width = 54.28329671055591
+        # self.cols = 842
+
+        # x = locs[:,1] - self.cols / 2.
+        # x = (-1 * ((x / float(self.cols / 2.)) * (self.width / 2.))) #+ self.width
+        # y = (-1*(locs[:,0] / float(self.rows)) * self.height) + self.height
         
         return np.column_stack((x, y))
 
