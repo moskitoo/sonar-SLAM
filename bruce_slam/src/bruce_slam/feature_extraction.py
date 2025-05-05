@@ -170,6 +170,13 @@ class FeatureExtraction(object):
             self.range_resolution = 0.076
             self.image_width = 512
             self.image_height = 526
+
+
+        # self.res = 0.06454201611952226
+        # self.height = 29.94749547945833
+        # self.rows = 464
+        # self.width = 54.28329671055591
+        # self.cols = 842
         
         # Calculate physical dimensions of the image in meters
         width_meters = self.range_max * 2  # Full width of the image in meters
