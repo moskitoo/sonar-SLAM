@@ -146,8 +146,15 @@ class FeatureExtraction(object):
         # image_offset: 2048
         # image_size: 271416
         # message_size: 273464
-        
 
+
+        # INFO FROM DEVELOPMENT
+        # self.res = 0.06454201611952226
+        # self.height = 29.94749547945833
+        # self.rows = 464
+        # self.width = 54.28329671055591
+        # self.cols = 842
+        
 
         # uint32     ping_id
         # uint16     part_number
@@ -160,12 +167,16 @@ class FeatureExtraction(object):
 
         # sensor_msgs/CompressedImage ping
 
-        # INFO FROM DEVELOPMENT
-        # self.res = 0.06454201611952226
-        # self.height = 29.94749547945833
-        # self.rows = 464
-        # self.width = 54.28329671055591
-        # self.cols = 842
+        # ==== Resulting Dimensions ====
+        # Height (m): 29.95
+        # Width (m): 54.28
+        # Rows: 464
+        # Cols: 842
+        # ==== Calculation Parameters ====
+        # Input range_resolution: 0.06454201611952226
+        # Input num_ranges (rows): 464
+        # Input bearings: -6500° to 6500°
+
 
         print(type(ping))
 

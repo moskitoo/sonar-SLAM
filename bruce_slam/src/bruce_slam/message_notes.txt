@@ -1,0 +1,81 @@
+ubuntu@6dbbf8ebc19b:~/34763-autonomous-marine-robotics/Training_Sessions/TS6_Perception/ts6_ws$ rostopic echo /oculus/oculus_metadata -n 1 --noarr
+header: 
+  seq: 11273
+  stamp: 
+    secs: 1742388316
+    nsecs: 975620468
+  frame_id: "blue3/oculus"
+tvg: "<array type: float32, length: 526>"
+---
+
+ubuntu@6dbbf8ebc19b:~/34763-autonomous-marine-robotics/Training_Sessions/TS6_Perception/ts6_ws$ rostopic echo /oculus/oculus_simple_ping_result -n 1 --noarr
+header: 
+  seq: 11317
+  stamp: 
+    secs: 1742388326
+    nsecs: 427384893
+  frame_id: "blue3/oculus"
+src_device_id: 21187
+dst_device_id: 0
+msg_id: 35
+msg_version: 2
+payload_size: 273448
+master_mode: 2
+ping_rate: 165
+network_speed: 165
+gamma_correction: 127
+flags: 77
+range: 40.0
+gain_percent: 95.24199999999999
+speed_of_sound: 1419.7895667926232
+salinity: 0.0
+ext_flags: 0
+ping_id: 11318
+status: 192
+frequency: 1196808.5106382978
+temperature: 3.5500000000000043
+pressure: 0.0091552734375
+heading: 1.625
+pitch: 0.0
+roll: 0.0
+speed_of_sound_used: 1419.7895667926232
+ping_start_time: 3048.752612
+data_size: 0
+range_resolution: 0.07602499866985567
+n_ranges: 526
+n_beams: 512
+image_offset: 2048
+image_size: 271416
+message_size: 273464
+---
+
+ubuntu@6dbbf8ebc19b:~/34763-autonomous-marine-robotics/Training_Sessions/TS6_Perception/ts6_ws$ rostopic echo /oculus/raw_data -n 1 --noarr
+header: 
+  seq: 12447
+  stamp: 
+    secs: 1742388339
+    nsecs: 523600506
+  frame_id: ''
+direction: 1
+data: "<array type: uint8, length: 273464>"
+---
+
+ubuntu@6dbbf8ebc19b:~/34763-autonomous-marine-robotics/Training_Sessions/TS6_Perception/ts6_ws$ rostopic echo /oculus/sonar_image -n 1 --noarr
+header: 
+  seq: 11439
+  stamp: 
+    secs: 1742388352
+    nsecs: 322215623
+  frame_id: "blue3/oculus"
+ping_info: 
+  frequency: 1196808.5
+  sound_speed: 0.0
+  tx_beamwidths: "<array type: float32, length: 512>"
+  rx_beamwidths: "<array type: float32, length: 512>"
+beam_directions: "<array type: geometry_msgs/Vector3, length: 512>"
+ranges: "<array type: float32, length: 526>"
+image: 
+  is_bigendian: False
+  dtype: 0
+  beam_count: 512
+  data: "<array type: uint8, length: 269312>"
