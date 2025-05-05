@@ -27,7 +27,7 @@ SLAM_NS = "/bruce/slam/"
 GYRO_INTEGRATION_TOPIC = SLAM_NS + "gyro_integrated"
 SONAR_FUSION_TOPIC = SLAM_NS + "sonar_fusion"
 # LOCALIZATION_ODOM_TOPIC = SLAM_NS + "localization/odom"
-LOCALIZATION_ODOM_TOPIC = SLAM_NS + "/mavros_odom"
+LOCALIZATION_ODOM_TOPIC = "/mavros_odom"
 
 LOCALIZATION_TRAJ_TOPIC = SLAM_NS + "localization/traj"
 SLAM_POSE_TOPIC = SLAM_NS + "slam/pose"
