@@ -16,6 +16,10 @@
         <param name="apply_drift" value="false"/>
     </node>
 
+
+    <!-- Launch sonar post-processing -->
+    <include file="$(find sonar_image_proc)/launch/sonar_postproc.launch" />
+
     <!-- offline mode -->
     <group ns="bruce" unless="$(eval arg('file') == '')">
         <group ns="slam">
