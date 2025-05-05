@@ -76,15 +76,6 @@ class FeatureExtraction(object):
         self.rov_id = ""
 
 
-
-        # range_resolution: 0.019006249667463917
-        # n_ranges: 526
-        # n_beams: 512
-        # image_offset: 2048
-        # image_size: 271416
-        # message_size: 273464
-
-
     def configure(self):
         '''Calls the CFAR class constructor for the featureExtraction class
         '''
@@ -147,6 +138,29 @@ class FeatureExtraction(object):
 
         ping: OculusPing message
         '''
+
+        # range_resolution: 0.019006249667463917
+        # n_ranges: 526
+        # n_beams: 512
+        # image_offset: 2048
+        # image_size: 271416
+        # message_size: 273464
+        
+
+
+        # uint32     ping_id
+        # uint16     part_number
+        # uint32     start_time
+
+        # int16[]    bearings         # bearings of beams (bearing * PI / 18000)
+        # float64    range_resolution # length of a single range bin
+        # uint32     num_ranges       # number of range lines in the image
+        # uint32     num_beams        # number of bearings in the image     
+
+        # sensor_msgs/CompressedImage ping
+
+        print(type(ping))
+
 
         #get the parameters from the ping message
         _res = ping.range_resolution
