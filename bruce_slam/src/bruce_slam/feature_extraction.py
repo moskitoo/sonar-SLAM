@@ -139,6 +139,7 @@ class FeatureExtraction(object):
         ping: OculusPing message
         '''
 
+        # INFO FROM THE TOPIC
         # range_resolution: 0.019006249667463917
         # n_ranges: 526
         # n_beams: 512
@@ -158,6 +159,13 @@ class FeatureExtraction(object):
         # uint32     num_beams        # number of bearings in the image     
 
         # sensor_msgs/CompressedImage ping
+
+        # INFO FROM DEVELOPMENT
+        # self.res = 0.06454201611952226
+        # self.height = 29.94749547945833
+        # self.rows = 464
+        # self.width = 54.28329671055591
+        # self.cols = 842
 
         print(type(ping))
 
