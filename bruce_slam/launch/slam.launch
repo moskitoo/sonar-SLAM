@@ -3,11 +3,18 @@
     <arg name="enable_slam" default="true"/>
     <arg name="kalman_dead_reckoning" default="false"/>
 
+    <arg name="apply_drift" default="false"/>
+
     <!-- offline mode -->
     <arg name="file" default=""/>
     <arg name="start" default="0.0"/>
     <arg name="duration" default="-1"/>
     <arg name="kill" default="false"/>
+
+
+    <node pkg="bruce_slam" name="mavros_republisher" type="bluerov_republisher.py" output="screen">
+        <param name="apply_drift" value="false"/>
+    </node>
 
     <!-- offline mode -->
     <group ns="bruce" unless="$(eval arg('file') == '')">
