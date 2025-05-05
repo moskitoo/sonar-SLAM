@@ -75,6 +75,16 @@ class FeatureExtraction(object):
         # place holder for the multi-robot system
         self.rov_id = ""
 
+
+
+        # range_resolution: 0.019006249667463917
+        # n_ranges: 526
+        # n_beams: 512
+        # image_offset: 2048
+        # image_size: 271416
+        # message_size: 273464
+
+
     def configure(self):
         '''Calls the CFAR class constructor for the featureExtraction class
         '''
