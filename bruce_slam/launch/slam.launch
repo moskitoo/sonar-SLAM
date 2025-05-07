@@ -12,18 +12,19 @@
     <arg name="kill" default="false"/>
 
 
-    <!-- <node pkg="bruce_slam" name="mavros_republisher" type="bluerov_republisher.py" output="screen">
+    <node pkg="bruce_slam" name="mavros_republisher" type="bluerov_republisher.py" output="screen">
         <param name="apply_drift" value="false"/>
         <param name="output_child_frame_id" value="bluerov2/base_link"/>
     </node>
-    <node pkg="tf" name="base_link_to_sonar_orientation" type="static_transform_publisher" args="0 0 0 1.5708 0 0 base_link bluerov2/base_link 100"/> -->
-
-    <node pkg="bruce_slam" name="mavros_republisher" type="bluerov_republisher.py" output="screen">
-        <param name="apply_drift" value="false"/>
-        <!-- <param name="output_child_frame_id" value="bluerov2/base_link"/> -->
-    </node>
     <!-- <node pkg="tf" name="base_link_to_sonar_orientation" type="static_transform_publisher" args="0 0 0 1.5708 0 0 base_link bluerov2/base_link 100"/> -->
+    <node pkg="tf" name="base_link_to_sonar_orientation" type="static_transform_publisher" args="0 0 0 0 0 1.5708 base_link bluerov2/base_link 100"/>
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="static_bluerov2_to_base_link" args="0 0 0 1.5708 0 0 base_link bluerov2/base_link" /> -->
 
+
+
+    <!-- <node pkg="bruce_slam" name="mavros_republisher" type="bluerov_republisher.py" output="screen">
+        <param name="apply_drift" value="false"/>
+    </node> -->
 
 
     <!-- Launch sonar post-processing -->
